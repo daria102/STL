@@ -1,89 +1,121 @@
-#include<iostream>
-#include <stack>
+#include <iostream>
 #include <fstream>
 #include <string>
-#include <algorithm>
-#include <cmath>
 #include <vector>
-#include <map>
 #include <set>
+#include <queue>
 using namespace std;
+// this is the main function
 
-struct doctor {
-    string nume;
-    string specializare;
-    int start = 9;
-    int finish = 17;
-    int rezolvate = 0;
-    vector<string>boli;
-};
-
-
-struct pacient {
-    string boala;
-    string specializare_necesara;
+struct problems {
+    string problema;
+    string specialitateNecesara;
     int durata;
     int prioritate;
+    int oraSosire;
+
+    bool operator<(const problems& b) const {
+        if (oraSosire != b.oraSosire)
+            return oraSosire > b.oraSosire;
+        return prioritate < b.prioritate;
+    }
 };
-bool operator==(const pacient& p, const doctor& d)
-{
-    if (d.specializare == p.specializare_necesara)
-        return true;
-    else
-        return false;
-}
-ifstream fin("input.txt");
+
+struct doctors {
+    string nume;
+    //string specializare;
+    int inceput = 9;
+    int sfarsit = 17;
+    int nrSpecializari;
+    vector<pair<string, int>> problemeRezolvate;
+    vector<string> listaSpecializari;
+};
+
+struct comparator {
+
+};
 
 int main()
 {
-    int nrp, nrd;
-    fin >> nrp;
-    vector<pacient>pacienti;
-    vector<doctor>doctori;
-    for (int i = 0; i < nrp; i++)
-    {
-        pacient p;
-        fin >> p.boala >> p.specializare_necesara >> p.durata >> p.prioritate;
-        pacienti.push_back(p);
-    }
-    fin >> nrd;
-    for (int i = 0; i < nrd; i++)
-    {
-        doctor d;
-        fin >> d.nume >> d.specializare;
-        d.start = 9;
-        d.finish = 17;
-        doctori.emplace_back(d);
-    }
-    sort(pacienti.begin(), pacienti.end(), [](pacient a, pacient b) {
-        return a.prioritate > b.prioritate;
-        });//sortez dupa prioritate
+    ifstream inFile("input2.txt");
 
-    for (auto i : pacienti)
+    int no_problems, no_doctors;
+    string name, speciality;
+    int duration, priority, ora;
+
+    inFile >> no_problems;
+    priority_queue<problems> probleme;
+    for (int i = 0; i < no_problems; i++)
     {
-        auto it = find_if(doctori.begin(), doctori.end(), [&i](const doctor& d) {
-            if (d.specializare == i.specializare_necesara && d.start + i.durata <= d.finish)
-                return 1;
-            else
-                return 0;
-            });
-        if (it != doctori.end())
+        inFile >> name;
+        inFile >> speciality;
+        inFile >> ora;
+        inFile >> duration;
+        inFile >> priority;
+        problems problema;
+        problema.durata = duration;
+        problema.prioritate = priority;
+        problema.specialitateNecesara = speciality;
+        problema.problema = name;
+        problema.oraSosire = ora;
+        probleme.push(problema);
+    }
+
+    inFile >> no_doctors;
+    int nr;
+    vector<doctors> doctori(no_doctors);
+
+    for (int i = 0; i < no_doctors; i++)
+    {
+        inFile >> name;
+        inFile >> nr;
+        for (int j = 0; j < nr; j++)
         {
-            (it).start += i.durata;
-            (it).boli.push_back(i.boala);
-            (*it).rezolvate++;
+            inFile >> speciality;
+            doctori[i].listaSpecializari.emplace_back(speciality);
         }
+
+        doctori[i].nume = name;
     }
 
-    for (auto i : doctori)
+    while (!probleme.empty())
     {
-        if (i.rezolvate > 0)
+        problems Problema = probleme.top();
+        probleme.pop();
+
+        auto it = find_if(doctori.begin(), doctori.end(), [&](doctors& x) {
+            for (auto& a : x.listaSpecializari)
+            {
+                if (a == Problema.specialitateNecesara && x.inceput + Problema.durata <= x.sfarsit && x.inceput <= Problema.oraSosire)
+                {
+                    x.inceput = Problema.oraSosire + Problema.durata;
+                    x.problemeRezolvate.push_back({ Problema.problema, Problema.oraSosire });
+                    return true;
+                }
+            }
+
+            return false;
+            });
+
+        /* if (it != doctori.end())
+         {
+             (*it).inceput = Problema.oraSosire + Problema.durata;
+
+         }*/
+    }
+
+    for (auto& i : doctori)
+    {
+        if (!i.problemeRezolvate.empty())
         {
-            cout << i.nume << " " << i.rezolvate << " ";
-            for (auto j : i.boli)
-                cout << j << " ";
+            cout << i.nume << " " << i.problemeRezolvate.size() << " ";
+            for (auto& j : i.problemeRezolvate)
+            {
+                cout << j.first << " " << j.second << " ";
+            }
             cout << '\n';
         }
     }
 
+    return 0;
 }
